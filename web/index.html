@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tsrollup 管理页</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <h1>时序滚动聚合</h1>
+    <p class="sub">tsd · 写入试点 / 查窗口聚合 · :8113</p>
+  </header>
+  <main>
+    <section>
+      <h2>状态</h2>
+      <pre id="stats">加载中…</pre>
+    </section>
+    <section>
+      <h2>系列</h2>
+      <pre id="series">[]</pre>
+    </section>
+    <section>
+      <h2>写入试点</h2>
+      <label>系列 <input id="name" value="cpu" /></label>
+      <label>host <input id="host" value="a" /></label>
+      <label>值 <input id="value" type="number" step="any" value="1.5" /></label>
+      <button id="append">Append</button>
+      <button id="compact">Compact</button>
+      <p id="msg"></p>
+    </section>
+    <section>
+      <h2>窗口查询</h2>
+      <label>系列 <input id="qseries" value="cpu" /></label>
+      <button id="query">Query</button>
+      <pre id="result">[]</pre>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
