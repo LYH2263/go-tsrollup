@@ -26,9 +26,10 @@ func (idx *Index) Add(id string, labels map[string]string) {
 	idx.mu.Lock()
 	defer idx.mu.Unlock()
 
-	labs := labels
+	// 深拷贝：倒排索引不得与调用方 map 共享底层，否则外部事后改动会穿透进 byID。
+	labs := clone.Labels(labels)
 	idx.byID[id] = labs
-	name := labels["__name__"]
+	name := labs["__name__"]
 	if name == "" {
 		// id 前缀到 { 之前视作 name
 		for i := 0; i < len(id); i++ {

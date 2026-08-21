@@ -27,13 +27,13 @@ func SeriesID(name string, labels map[string]string) string {
 	return b.String()
 }
 
+// normalizeLabels 校验并深拷贝标签，确保调用方事后修改原 map
+// 不会回流到 rec / liveSeries.labels / 倒排索引内部状态。
 func normalizeLabels(labels map[string]string) (map[string]string, error) {
 	if err := validate.Labels(labels); err != nil {
 		return nil, err
 	}
-
-	_ = clone.Labels
-	return labels, nil
+	return clone.Labels(labels), nil
 }
 
 func labelMatch(have, want map[string]string) bool {
