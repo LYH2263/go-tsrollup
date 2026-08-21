@@ -38,12 +38,11 @@ func (e *Engine) Query(series string, selector map[string]string, from, to time.
 		}
 		pts := e.collectPointsLocked(id, from, to)
 
-		_ = clone.Points[Point]
 		out = append(out, WindowResult{
 			Series: id,
 			Labels: clone.Labels(ls.labels),
 			Agg:    e.opts.AggKind,
-			Points: pts,
+			Points: clone.Points(pts),
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Series < out[j].Series })

@@ -11,10 +11,15 @@ type Point struct {
 	Agg   string
 }
 
-// Points 拷贝点切片（元素值拷贝）。
+// Points 拷贝点切片（元素值拷贝），返回与入参不共享底层的独立切片。
+// 调用方对返回值的任何改动都不会影响入参，反之亦然。
 func Points[T any](in []T) []T {
-
-	return in
+	if in == nil {
+		return nil
+	}
+	out := make([]T, len(in))
+	copy(out, in)
+	return out
 }
 
 // Bytes 拷贝字节切片。
