@@ -18,6 +18,9 @@ func (e *Engine) Append(s Sample) error {
 // AppendContext 带取消的写入；WAL 写前检查 ctx。
 func (e *Engine) AppendContext(ctx context.Context, s Sample) error {
 
+	if err := e.ensureOpen(); err != nil {
+		return err
+	}
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("%w: %v", ErrCanceled, err)
 	}
@@ -42,6 +45,12 @@ func (e *Engine) AppendContext(ctx context.Context, s Sample) error {
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if e.closed.Load() {
+		return ErrClosed
+	}
+	if e.wal == nil {
+		return ErrClosed
+	}
 	if err := e.wal.Append(ctx, rec); err != nil {
 		return fmt.Errorf("%w: %v", ErrWAL, err)
 	}
