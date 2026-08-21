@@ -7,6 +7,7 @@ import (
 
 	"github.com/LYH2263/go-tsrollup/internal/clone"
 	"github.com/LYH2263/go-tsrollup/internal/validate"
+	"github.com/LYH2263/go-tsrollup/internal/wait"
 	"github.com/LYH2263/go-tsrollup/internal/wal"
 )
 
@@ -17,11 +18,13 @@ func (e *Engine) Append(s Sample) error {
 
 // AppendContext 带取消的写入；WAL 写前检查 ctx。
 func (e *Engine) AppendContext(ctx context.Context, s Sample) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := e.ensureOpen(); err != nil {
 		return err
 	}
 
-	_ = ctx
 	if err := validate.Sample(s.Series, s.Ts, s.Value); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
@@ -38,12 +41,14 @@ func (e *Engine) AppendContext(ctx context.Context, s Sample) error {
 		Ts:     s.Ts.UTC(),
 		Value:  s.Value,
 	}
-	e.mu.Lock()
+	if err := wait.Lock(ctx, &e.mu); err != nil {
+		return fmt.Errorf("%w: %v", ErrCanceled, err)
+	}
 	defer e.mu.Unlock()
 	if e.closed.Load() {
 		return ErrClosed
 	}
-	if err := e.wal.Append(context.Background(), rec); err != nil {
+	if err := e.wal.Append(ctx, rec); err != nil {
 		return fmt.Errorf("%w: %v", ErrWAL, err)
 	}
 	e.walRecs.Add(1)

@@ -39,14 +39,20 @@ func Open(dir string) (*Log, error) {
 	}, nil
 }
 
-// Append 写入记录。
+// Append 写入记录；尊重调用方 ctx，序列化、刷盘前先做取消检查，
+// 避免取消后仍在 fsync 上空转。
 func (l *Log) Append(ctx context.Context, rec Record) error {
-
-	_ = ctx
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.f == nil {
 		return fmt.Errorf("wal: closed")
+	}
+	// 拿到锁后再次确认 ctx 仍在有效期内——排队期间可能已被取消。
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	b, err := json.Marshal(rec)
 	if err != nil {
@@ -60,6 +66,10 @@ func (l *Log) Append(ctx context.Context, rec Record) error {
 	}
 	l.n++
 	if l.n%l.syncEvery == 0 {
+		// fsync 最为耗时，刷盘前再确认一次取消，避免取消后仍空转。
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err := l.bw.Flush(); err != nil {
 			return err
 		}
