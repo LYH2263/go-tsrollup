@@ -47,16 +47,11 @@ func (e *Engine) Compact(ctx context.Context) error {
 	if len(rows) == 0 {
 		return nil
 	}
+	// 刷盘失败时不得删除 openWins，也不得提升只读视图：
+	// 否则未落盘的内存聚合点将丢失，同进程再 Query 也读不到（bug06 目标）。
+	// 窗口留在 openWins 内，等待下一次 Compact 重试刷盘。
 	view, err := e.flushRowsLocked(rows)
 	if err != nil {
-
-		if view != nil {
-			e.readonly = append(e.readonly, view)
-		}
-		for _, k := range closeKeys {
-			delete(e.openWins, k)
-			e.closedW.Add(1)
-		}
 		return fmt.Errorf("%w: %v", ErrPersist, err)
 	}
 	e.readonly = append(e.readonly, view)
