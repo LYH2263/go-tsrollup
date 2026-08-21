@@ -31,8 +31,13 @@ func normalizeLabels(labels map[string]string) (map[string]string, error) {
 	if err := validate.Labels(labels); err != nil {
 		return nil, err
 	}
-
-	return clone.Labels(labels), nil
+	out := clone.Labels(labels)
+	if out == nil {
+		// 调用方只给系列名（Labels=nil）时 clone.Labels 返回 nil；
+		// 收成非空 map，避免后续盖 __queried__ 戳时对 nil map 写入 panic。
+		out = make(map[string]string)
+	}
+	return out, nil
 }
 
 func labelMatch(have, want map[string]string) bool {

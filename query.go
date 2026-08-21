@@ -40,6 +40,11 @@ func (e *Engine) Query(series string, selector map[string]string, from, to time.
 		// 深拷贝 Points，避免与聚合缓冲别名（bug02 目标）。
 		pts = clone.Points(pts)
 
+		// 盖 __queried__ 戳：保证 labels 非空，避免对 nil map 解引用 panic
+		// （采集端只给系列名、WAL 重放 null labels 等场景下 ls.labels 可能为 nil）。
+		if ls.labels == nil {
+			ls.labels = make(map[string]string)
+		}
 		ls.labels["__queried__"] = "1"
 		out = append(out, WindowResult{
 			Series: id,
