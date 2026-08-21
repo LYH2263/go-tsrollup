@@ -65,11 +65,14 @@ func (w *Writer) Close() error {
 		return err
 	}
 
-	if err := w.f.Close(); err != nil {
-		_ = os.Remove(w.tmp)
+	// 先 Sync 刷盘，再 Close 句柄，最后 Rename 到最终路径。
+	// 顺序不能反：Close 之后再 Sync 作用在已关闭句柄上无效，
+	// Windows 上 Rename 出去的可能是未刷盘内容（Compact 落段偶发丢数据的根因）。
+	if err := w.f.Sync(); err != nil {
+		_ = w.Abort()
 		return err
 	}
-	if err := w.f.Sync(); err != nil {
+	if err := w.f.Close(); err != nil {
 		_ = os.Remove(w.tmp)
 		return err
 	}
