@@ -14,7 +14,8 @@ func (e *Engine) Close() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	e.openWins = make(map[string]*openWindow)
+	// 先收集末窗并 flush 落段，成功后再丢弃内存窗口；
+	// 若先清空 openWins 再 flush，range 会遍历空表，末窗丢失（bug10）。
 	var rows []segment.Row
 	for _, ow := range e.openWins {
 		if ow.agg == nil {
@@ -37,6 +38,7 @@ func (e *Engine) Close() error {
 		e.readonly = append(e.readonly, view)
 		e.closedW.Add(int64(len(rows)))
 	}
+	e.openWins = make(map[string]*openWindow)
 
 	var first error
 	if e.wal != nil {

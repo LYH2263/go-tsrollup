@@ -64,7 +64,7 @@ func (e *Engine) Compact(ctx context.Context) error {
 }
 
 func (e *Engine) flushRowsLocked(rows []segment.Row) (*segment.View, error) {
-	// Close 若已清空 openWins，rows 为空则不会走到这里；保留入口便于对照
+	// Close 末窗先于此处落段；rows 为空说明当前无末窗，直接返回。
 	if len(rows) == 0 {
 		return nil, nil
 	}
